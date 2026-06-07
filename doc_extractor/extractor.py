@@ -1,5 +1,7 @@
+import glob
 import os
 import re
+import shutil
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -13,6 +15,57 @@ except Exception:  # pragma: no cover - optional OCR dependencies
     pytesseract = None
     convert_from_path = None
     PDFInfoNotInstalledError = Exception
+
+
+def find_poppler_path():
+    """Locate the Poppler bin directory.
+
+    Returns a directory path to pass as poppler_path, or None if Poppler
+    is already on PATH (pdf2image will find it on its own).
+    Raises RuntimeError if Poppler cannot be found anywhere.
+    """
+    # 1. Explicit override via environment variable.
+    env_path = os.environ.get("POPPLER_PATH", "").strip().strip('"')
+    if env_path:
+        candidate = Path(env_path)
+        # Accept either the bin folder itself or the install root.
+        for option in (candidate, candidate / "bin", candidate / "Library" / "bin"):
+            if (option / "pdftoppm.exe").exists() or (option / "pdftoppm").exists():
+                return str(option)
+        raise RuntimeError(
+            f"POPPLER_PATH is set to '{env_path}' but pdftoppm was not found there. "
+            "Point it to Poppler's 'bin' folder (the one containing pdftoppm.exe)."
+        )
+
+    # 2. Already on PATH.
+    if shutil.which("pdftoppm"):
+        return None
+
+    # 3. Common Windows install locations.
+    patterns = [
+        r"C:\poppler*\Library\bin",
+        r"C:\poppler*\bin",
+        r"C:\Program Files\poppler*\Library\bin",
+        r"C:\Program Files\poppler*\bin",
+        r"C:\Program Files (x86)\poppler*\Library\bin",
+        r"C:\Program Files (x86)\poppler*\bin",
+        str(Path.home() / "poppler*" / "Library" / "bin"),
+        str(Path.home() / "poppler*" / "bin"),
+        str(Path.home() / "Downloads" / "poppler*" / "Library" / "bin"),
+        str(Path.home() / "Downloads" / "poppler*" / "bin"),
+    ]
+    for pattern in patterns:
+        for match in sorted(glob.glob(pattern), reverse=True):
+            if (Path(match) / "pdftoppm.exe").exists() or (Path(match) / "pdftoppm").exists():
+                return match
+
+    raise RuntimeError(
+        "Poppler was not found. Either:\n"
+        "1. Install it from https://github.com/oschwartz10612/poppler-windows/releases "
+        "and add its 'Library\\bin' folder to PATH, or\n"
+        "2. Set the POPPLER_PATH environment variable to that folder, e.g. "
+        "POPPLER_PATH=C:\\poppler-24.08.0\\Library\\bin"
+    )
 
 
 def extract_text(source, source_type="pdf"):
@@ -44,12 +97,15 @@ def extract_text(source, source_type="pdf"):
     if pytesseract is None or convert_from_path is None:
         raise RuntimeError("OCR dependencies are not available. Install pytesseract and pdf2image.")
 
+    poppler_path = find_poppler_path()
+
     try:
-        images = convert_from_path(str(path))
+        images = convert_from_path(str(path), poppler_path=poppler_path)
     except PDFInfoNotInstalledError as exc:
         raise RuntimeError(
-            "Scanned PDF OCR needs Poppler installed and available on PATH. "
-            "Install Poppler for Windows and retry the extraction."
+            "Scanned PDF OCR needs Poppler installed. Install Poppler for Windows "
+            "(https://github.com/oschwartz10612/poppler-windows/releases) and either add "
+            "its 'Library\\bin' folder to PATH or set the POPPLER_PATH environment variable."
         ) from exc
 
     for image in images:

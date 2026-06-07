@@ -3,7 +3,14 @@ from pathlib import Path
 
 import streamlit as st
 
-from doc_extractor.extractor import build_schedule_rows, export_excel, export_pdf, extract_text, paginate_rows
+from doc_extractor.extractor import (
+    build_schedule_rows,
+    export_excel,
+    export_pdf,
+    extract_text,
+    find_poppler_path,
+    paginate_rows,
+)
 
 st.set_page_config(page_title="Engineering Drawing Extractor", layout="wide")
 st.title("Engineering Drawing Extractor")
@@ -12,20 +19,21 @@ st.caption("Upload a PDF or text drawing, enter a prompt, and extract structured
 with st.expander("Need help with scanned PDFs?", expanded=False):
     st.markdown(
         """
-        If your drawing is a scanned PDF, the extractor may need Poppler installed on your machine.
-        On Windows, install Poppler and ensure the `bin` folder is on your PATH.
-        Then restart the app and try again.
+        If your drawing is a scanned PDF, the extractor needs Poppler installed on your machine.
+        The app looks for Poppler in this order: the `POPPLER_PATH` environment variable,
+        your system PATH, then common install folders like `C:\\poppler-xx\\Library\\bin`.
         """
     )
 
     if st.button("Test Poppler Path", help="Check whether Poppler tools are visible to the app."):
-        import shutil
-
-        poppler_found = shutil.which("pdftoppm") is not None
-        if poppler_found:
-            st.success("Poppler PATH is working. The app can find pdftoppm.")
-        else:
-            st.error("Poppler PATH is not available. Install Poppler and add its bin folder to PATH, then retry.")
+        try:
+            poppler_path = find_poppler_path()
+            if poppler_path:
+                st.success(f"Poppler found at: {poppler_path}")
+            else:
+                st.success("Poppler is on PATH. The app can find pdftoppm.")
+        except RuntimeError as exc:
+            st.error(str(exc))
 
     st.link_button(
         "Install Poppler for Windows",

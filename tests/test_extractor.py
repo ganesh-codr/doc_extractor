@@ -34,8 +34,9 @@ def test_extract_text_reports_missing_poppler(monkeypatch, tmp_path):
     bad_pdf.write_bytes(b'%PDF-1.4\ninvalid')
 
     monkeypatch.setattr(extractor, 'pytesseract', object())
+    monkeypatch.setattr(extractor, 'find_poppler_path', lambda: None)
 
-    def raise_poppler(path):
+    def raise_poppler(path, poppler_path=None):
         from pdf2image.exceptions import PDFInfoNotInstalledError
 
         raise PDFInfoNotInstalledError('poppler missing')

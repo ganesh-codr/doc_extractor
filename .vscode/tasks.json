@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run doc_extractor UI",
+			"type": "shell",
+			"command": "python -m streamlit run app.py --server.headless true --server.port 8501",
+			"args": [],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doc_extractor"
+version = "0.1.0"
+description = "Extract engineering drawing data from PDF and scanned PDFs into Excel"
+requires-python = ">=3.10"
+dependencies = [
+  "pypdf>=4.0.0",
+  "pytesseract>=0.3.0",
+  "pdf2image>=1.17.0",
+  "openpyxl>=3.1.0",
+  "streamlit>=1.36.0",
+  "fpdf>=1.7.0"
+]
+
+[project.scripts]
+doc-extractor = "doc_extractor.main:main"

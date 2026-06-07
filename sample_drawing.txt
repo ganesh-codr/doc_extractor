@@ -1,0 +1,3 @@
+MBSRE SYSTEM DRAWING
+Cable TAG CBL-001 from MCC-1 to VFD-1, size 4Cx2.5, Type XLPE
+Cable TAG CBL-002 from MCC-1 to PUMP-1, size 4Cx4.0, Type PVC
